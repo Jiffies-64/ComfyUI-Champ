@@ -154,14 +154,16 @@ class ChampLoader:
                 "motion_module_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/motion_module.pth"}),
                 "denoising_unet_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/denoising_unet.pth"}),
                 "reference_unet_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/reference_unet.pth"}),
-                "depth_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_depth.pth"}),
-                "dwpose_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_dwpose.pth"}),
-                "normal_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_normal.pth"}),
-                "softedge_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_normal.pth"}),
-                "lineart_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_normal.pth"}),
-                "semantic_map_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_semantic_map.pth"}),
                 "weight_dtype": (["fp16","fp32"], {"default": "fp16"}),
             },
+            "optional": {
+                "depth_path": ("STRING", {"default": "none"}),
+                "dwpose_path": ("STRING", {"default": "none"}),
+                "normal_path": ("STRING", {"default": "none"}),
+                "softedge_path": ("STRING", {"default": "none"}),
+                "lineart_path": ("STRING", {"default": "none"}),
+                "semantic_map_path": ("STRING", {"default": "none"}),
+            }
         }
 
     RETURN_TYPES = ("Champ","cfg","vae","image_enc","noise_scheduler",)
@@ -169,7 +171,7 @@ class ChampLoader:
     FUNCTION = "run"
     CATEGORY = "Champ"
 
-    def run(self,sd_path,vae_path,image_encoder_path,motion_module_path,denoising_unet_path,reference_unet_path,depth_path,dwpose_path,softedge_path,lineart_path,normal_path,semantic_map_path,weight_dtype):
+    def run(self,sd_path,vae_path,image_encoder_path,motion_module_path,denoising_unet_path,reference_unet_path,weight_dtype,depth_path,dwpose_path,softedge_path,lineart_path,normal_path,semantic_map_path):
         cfg = OmegaConf.load(config_path)
         OmegaConf.update(cfg, "base_model_path", sd_path)
         OmegaConf.update(cfg, "vae_model_path", vae_path)
@@ -239,7 +241,7 @@ class ChampLoader:
         )
         
         for guidance_type, guidance_encoder_module in guidance_encoder_group.items():
-            if guidance_type=="depth":
+            if guidance_type=="depth" and depth_path != "none":
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         depth_path,
@@ -247,7 +249,7 @@ class ChampLoader:
                     ),
                     strict=False,
                 )
-            if guidance_type=="normal":
+            if guidance_type=="normal" and normal_path != "none":
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         normal_path,
@@ -255,7 +257,7 @@ class ChampLoader:
                     ),
                     strict=False,
                 )
-            if guidance_type=="semantic_map":
+            if guidance_type=="semantic_map" and semantic_map_path != "none":
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         semantic_map_path,
@@ -263,7 +265,7 @@ class ChampLoader:
                     ),
                     strict=False,
                 )
-            if guidance_type=="dwpose":
+            if guidance_type=="dwpose" and dwpose_path != "none":
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         dwpose_path,
@@ -271,7 +273,7 @@ class ChampLoader:
                     ),
                     strict=False,
                 )
-            if guidance_type=="softedge":
+            if guidance_type=="softedge" and softedge_path != "none":
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         softedge_path,
@@ -279,7 +281,7 @@ class ChampLoader:
                     ),
                     strict=False,
                 )
-            if guidance_type=="lineart":
+            if guidance_type=="lineart" and lineart_path != "none":
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         lineart_path,
@@ -331,12 +333,6 @@ class ChampRun:
                 "image_enc": ("image_enc",),
                 "noise_scheduler": ("noise_scheduler",),
                 "image": ("IMAGE",),
-                "depth_images": ("IMAGE",),
-                "normal_images": ("IMAGE",),
-                "semantic_map_images": ("IMAGE",),
-                "dwpose_images": ("IMAGE",),
-                "softedge_images": ("IMAGE",),
-                "lineart_images": ("IMAGE",),
                 "width": ("INT",{"default":512}),
                 "height": ("INT",{"default":512}),
                 "video_length": ("INT",{"default":16}),
@@ -344,13 +340,21 @@ class ChampRun:
                 "guidance_scale": ("FLOAT",{"default":3.5}),
                 "seed": ("INT",{"default":1234}),
             },
+            "optional": {
+                "depth_images": ("IMAGE",),
+                "normal_images": ("IMAGE",),
+                "semantic_map_images": ("IMAGE",),
+                "dwpose_images": ("IMAGE",),
+                "softedge_images": ("IMAGE",),
+                "lineart_images": ("IMAGE",),
+            }
         }
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "run"
     CATEGORY = "Champ"
 
-    def run(self,model,cfg,vae,image_enc,noise_scheduler,image,depth_images,normal_images,semantic_map_images,dwpose_images,softedge_images,lineart_images,width,height,video_length,num_inference_steps,guidance_scale,seed):
+    def run(self,model,cfg,vae,image_enc,noise_scheduler,image,width,height,video_length,num_inference_steps,guidance_scale,seed,depth_images=None,normal_images=None,semantic_map_images=None,dwpose_images=None,softedge_images=None,lineart_images=None):
         ref_image = 255.0 * image[0].cpu().numpy()
         ref_image_pil = Image.fromarray(np.clip(ref_image, 0, 255).astype(np.uint8))
         ref_image_w, ref_image_h = ref_image_pil.size
@@ -362,17 +366,17 @@ class ChampRun:
         OmegaConf.update(cfg, "seed", seed)
         
         guidance_pil_group=dict()
-        if "depth" in cfg.guidance_types:
+        if "depth" in cfg.guidance_types and depth_images is not None:
             guidance_pil_group["depth"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in depth_images]
-        if "normal" in cfg.guidance_types:
+        if "normal" in cfg.guidance_types and normal_images is not None:
             guidance_pil_group["normal"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in normal_images]
-        if "semantic_map" in cfg.guidance_types:
+        if "semantic_map" in cfg.guidance_types and semantic_map_images is not None:
             guidance_pil_group["semantic_map"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in semantic_map_images]
-        if "dwpose" in cfg.guidance_types:
+        if "dwpose" in cfg.guidance_types and dwpose_images is not None:
             guidance_pil_group["dwpose"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in dwpose_images]
-        if "softedge" in cfg.guidance_types:
+        if "softedge" in cfg.guidance_types and softedge_images is not None:
             guidance_pil_group["softedge"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in softedge_images]
-        if "lineart" in cfg.guidance_types:
+        if "lineart" in cfg.guidance_types and lineart_images is not None:
             guidance_pil_group["lineart"] = [Image.fromarray(np.clip(255.0 * img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in lineart_images]
 
         if cfg.weight_dtype == "fp16":
