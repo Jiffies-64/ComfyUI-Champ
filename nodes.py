@@ -157,6 +157,8 @@ class ChampLoader:
                 "depth_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_depth.pth"}),
                 "dwpose_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_dwpose.pth"}),
                 "normal_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_normal.pth"}),
+                "softedge_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_normal.pth"}),
+                "lineart_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_normal.pth"}),
                 "semantic_map_path": ("STRING", {"default": "/home/admin/ComfyUI/models/champ/guidance_encoder_semantic_map.pth"}),
                 "weight_dtype": (["fp16","fp32"], {"default": "fp16"}),
             },
@@ -167,7 +169,7 @@ class ChampLoader:
     FUNCTION = "run"
     CATEGORY = "Champ"
 
-    def run(self,sd_path,vae_path,image_encoder_path,motion_module_path,denoising_unet_path,reference_unet_path,depth_path,dwpose_path,normal_path,semantic_map_path,weight_dtype):
+    def run(self,sd_path,vae_path,image_encoder_path,motion_module_path,denoising_unet_path,reference_unet_path,depth_path,dwpose_path,softedge_path,lineart_path,normal_path,semantic_map_path,weight_dtype):
         cfg = OmegaConf.load(config_path)
         OmegaConf.update(cfg, "base_model_path", sd_path)
         OmegaConf.update(cfg, "vae_model_path", vae_path)
@@ -265,6 +267,22 @@ class ChampLoader:
                 guidance_encoder_module.load_state_dict(
                     torch.load(
                         dwpose_path,
+                        map_location="cpu",
+                    ),
+                    strict=False,
+                )
+            if guidance_type=="softedge":
+                guidance_encoder_module.load_state_dict(
+                    torch.load(
+                        softedge_path,
+                        map_location="cpu",
+                    ),
+                    strict=False,
+                )
+            if guidance_type=="lineart":
+                guidance_encoder_module.load_state_dict(
+                    torch.load(
+                        lineart_path,
                         map_location="cpu",
                     ),
                     strict=False,
