@@ -317,6 +317,8 @@ class ChampRun:
                 "normal_images": ("IMAGE",),
                 "semantic_map_images": ("IMAGE",),
                 "dwpose_images": ("IMAGE",),
+                "softedge_images": ("IMAGE",),
+                "lineart_images": ("IMAGE",),
                 "width": ("INT",{"default":512}),
                 "height": ("INT",{"default":512}),
                 "video_length": ("INT",{"default":16}),
@@ -330,7 +332,7 @@ class ChampRun:
     FUNCTION = "run"
     CATEGORY = "Champ"
 
-    def run(self,model,cfg,vae,image_enc,noise_scheduler,image,depth_images,normal_images,semantic_map_images,dwpose_images,width,height,video_length,num_inference_steps,guidance_scale,seed):
+    def run(self,model,cfg,vae,image_enc,noise_scheduler,image,depth_images,normal_images,semantic_map_images,dwpose_images,softedge_images,lineart_images,width,height,video_length,num_inference_steps,guidance_scale,seed):
         ref_image = 255.0 * image[0].cpu().numpy()
         ref_image_pil = Image.fromarray(np.clip(ref_image, 0, 255).astype(np.uint8))
         ref_image_w, ref_image_h = ref_image_pil.size
@@ -350,7 +352,11 @@ class ChampRun:
             guidance_pil_group["semantic_map"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in semantic_map_images]
         if "dwpose" in cfg.guidance_types:
             guidance_pil_group["dwpose"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in dwpose_images]
-        
+        if "softedge" in cfg.guidance_types:
+            guidance_pil_group["softedge"]=[Image.fromarray(np.clip(255.0*img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in softedge_images]
+        if "lineart" in cfg.guidance_types:
+            guidance_pil_group["lineart"] = [Image.fromarray(np.clip(255.0 * img.cpu().numpy(), 0, 255).astype(np.uint8)) for img in lineart_images]
+
         if cfg.weight_dtype == "fp16":
             weight_dtype = torch.float16
         elif cfg.weight_dtype == "bf16":

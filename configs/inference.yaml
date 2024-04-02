@@ -23,6 +23,8 @@ guidance_types:
   - 'normal'
   - 'semantic_map'
   - 'dwpose'
+  - 'softedge'
+  - 'lineart'
 
 noise_scheduler_kwargs:
   num_train_timesteps: 1000
