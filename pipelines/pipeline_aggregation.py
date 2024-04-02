@@ -46,6 +46,8 @@ class MultiGuidance2LongVideoPipeline(DiffusionPipeline):
         guidance_encoder_normal,
         guidance_encoder_semantic_map,
         guidance_encoder_dwpose,
+        guidance_encoder_softedge,
+        guidance_encoder_lineart,
         scheduler: Union[
             DDIMScheduler,
             PNDMScheduler,
@@ -69,6 +71,8 @@ class MultiGuidance2LongVideoPipeline(DiffusionPipeline):
             guidance_encoder_normal=guidance_encoder_normal,
             guidance_encoder_semantic_map=guidance_encoder_semantic_map,
             guidance_encoder_dwpose=guidance_encoder_dwpose,
+            guidance_encoder_softedge=guidance_encoder_softedge,
+            guidance_encoder_lineart=guidance_encoder_lineart,
             scheduler=scheduler,
             image_proj_model=image_proj_model,
             tokenizer=tokenizer,
